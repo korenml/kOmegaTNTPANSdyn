@@ -137,6 +137,15 @@ kOmegaTNTPANSdyn<BasicTurbulenceModel>::kOmegaTNTPANSdyn
             1.0
         )
     ),
+	fOmega_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "fOmega",
+            this->coeffDict_,
+            4.0
+        )
+    ),
     delta_
     (
         LESdelta::New
@@ -156,22 +165,8 @@ kOmegaTNTPANSdyn<BasicTurbulenceModel>::kOmegaTNTPANSdyn
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
-        this->mesh_,
-		dimensionedScalar("one", 1.0)
+        this->mesh_
     ),
-    fOmega_
-    (
-        IOobject
-        (
-            IOobject::groupName("fOmega", alphaRhoPhi.group()),
-            this->runTime_.timeName(),
-            this->mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-		fEpsilon_/fk_
-    ),
-
     k_
     (
         IOobject
@@ -228,8 +223,8 @@ kOmegaTNTPANSdyn<BasicTurbulenceModel>::kOmegaTNTPANSdyn
     bound(k_, this->kMin_);
     bound(omega_, this->omegaMin_);
 
-    bound(kU_, min(fk_)*this->kMin_);
-    bound(omegaU_, min(fOmega_)*this->omegaMin_);
+    bound(kU_, fk_*this->kMin_);
+    bound(omegaU_, fOmega_*this->omegaMin_);
 
     if (type == typeName)
     {
@@ -252,6 +247,7 @@ bool kOmegaTNTPANSdyn<BasicTurbulenceModel>::read()
         alphaOmega_.readIfPresent(this->coeffDict());
         alphaD_.readIfPresent(this->coeffDict());
 		fEpsilon_.readIfPresent(this->coeffDict());
+		fOmega_.readIfPresent(this->coeffDict());
 
         return true;
     }
@@ -323,7 +319,7 @@ void kOmegaTNTPANSdyn<BasicTurbulenceModel>::correct()
     omegaUEqn.ref().boundaryManipulate(omegaU_.boundaryFieldRef());
     solve(omegaUEqn);
     fvOptions.correct(omegaU_);
-    bound(omegaU_, min(fOmega_)*this->omegaMin_);
+    bound(omegaU_, fOmega_*this->omegaMin_);
 
 
     // Turbulent kinetic energy equation
@@ -343,21 +339,16 @@ void kOmegaTNTPANSdyn<BasicTurbulenceModel>::correct()
     fvOptions.constrain(kUEqn.ref());
     solve(kUEqn);
     fvOptions.correct(kU_);
-    bound(kU_, min(fk_)*this->kMin_);
-
-    this->k_ = kU_/fk_;
-    this->k_.correctBoundaryConditions();
-
-    this->omega_ = omegaU_/fOmega_;
-    this->omega_.correctBoundaryConditions();
-
-    bound(this->k_, this->kMin_);
-    bound(this->omega_, this->omegaMin_);
+    bound(kU_, fk_*this->kMin_);
+	//correct k and omega
+	k_ = kU_/fk_;
+	omega_ = omegaU/fOmega_; 
 
     correctNut();
-	volScalarField term(pow(pow(k_,0.5)/(Cmu_*omega_*delta()), 2.0/3.0));
-	fk_.primitiveFieldRef() = max(1e-3,min(1.0-pow( term/(0.23 + term),4.5),1.0));
-	fOmega_= fEpsilon_/fk_;
+	volScalarField Lt(sqrt(k)/(Cmu_*omega));
+	//dynamic fk_
+	fk_.primitiveFieldRef()=max(0,min((1/(pow(Cmu_, 0.5))*pow(delta()/Lt,2/3)),1));
+	fOmega_ = fEpsilon_/fk_;
 }
 
 

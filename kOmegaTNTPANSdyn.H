@@ -25,7 +25,7 @@ Class
     Foam::RASModels::kOmegaTNTPANS
 
 Description
-    Standard high Reynolds-number k-omega turbulence model for
+    PANS k-omega TNT turbulence model for
     incompressible and compressible flows.
 
     References:
@@ -34,9 +34,9 @@ Description
 		Resolving the dependence on free-stream values for the k-omega turbulence model.
 		National Aerospace Laboratory NLR Report.
 
-		Foroutan, H. & Yavuzkurt, S. (2014).
-		A partially-averaged Navier-Stokes model for the simulation of turbulent swirling flow with vortex breakdown.
-		International Journal of Heat Fluid and Flow 50, 402-416.
+		Basara, B. & Krajnović, S. & Grimaji, S. & Pavlovic, Z. (2011).
+		Near-Wall Formulation of the Partially Averaged Navier-Stokes Turbulence Model.
+		AIAA Journal Vol. 49, 2627-2636.
 
     \endverbatim
 
